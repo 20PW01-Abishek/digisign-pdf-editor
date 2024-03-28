@@ -197,24 +197,58 @@
   function onMeasure(scale, i) {
     pagesScale[i] = scale;
   }
+
+  async function updatePDF(pdfId, userEmail, savedPdfData) {
+    const formData = new FormData();
+    formData.append("file_id", pdfId);
+    formData.append("user_email", userEmail);
+    formData.append("pdf", savedPdfData);
+    console.log("HHHHEEEEEELLLLLLLLLOOOO------333")
+    try {
+      const response = await fetch(`http://localhost:8001/pdfs/sign`, {
+        method: "POST",
+        body: formData,
+      });
+      console.log(response);
+      console.log("HHHHEEEEEELLLLLLLLLOOOO------444")
+      return response;
+    } catch (e) {
+      throw new Error(`Error updating PDF: ${e}`);
+    }
+  }
+
   // FIXME: Should wait all objects finish their async work
   async function savePDF() {
+    const pdfId = "66001c784b64d4b9e838f331"
+    const userEmail = "abishek20030324@gmail.com"
+    
+    console.log("HHHHEEEEEELLLLLLLLLOOOO------111")
     if (!pdfFile || saving || !pages.length) return;
+    console.log("HHHHEEEEEELLLLLLLLLOOOO------222")
     saving = true;
+
     try {
-      await save(pdfFile, allObjects, pdfName, pagesScale);
+      // const savedPdfData = await save(pdfFile, allObjects, pdfName, pagesScale);
+      const response = await updatePDF(pdfId, userEmail, pdfFile);
+      console.log("HHHHEEEEEELLLLLLLLLOOOO------555")
+      if (!response.ok) {
+        throw new Error(`Error updating PDF: ${await response.text()}`);
+      }
+
+      console.log("PDF saved and updated successfully!");
     } catch (e) {
-      console.log(e);
+      console.error("Error saving or updating PDF:", e);
     } finally {
       saving = false;
     }
   }
+  
 </script>
 
 <svelte:window
   on:dragenter|preventDefault
   on:dragover|preventDefault
-  on:drop|preventDefault={onUploadPDF('66001bbdd4b9f6a53c558dc6')} />
+  on:drop|preventDefault={onUploadPDF('66001c784b64d4b9e838f331')} />
 <Tailwind />
 <main class="flex flex-col items-center py-16 bg-gray-100 min-h-screen">
   <div
@@ -224,7 +258,7 @@
       type="file"
       name="pdf"
       id="pdf"
-      on:change={onUploadPDF('66001bbdd4b9f6a53c558dc6')}
+      on:change={onUploadPDF('66001c784b64d4b9e838f331')}
       class="hidden" />
     <input
       type="file"
