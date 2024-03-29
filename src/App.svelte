@@ -28,11 +28,16 @@
   let selectedPageIndex = -1;
   let saving = false;
   let addingDrawing = false;
+  // let metaData = {
+  //   'pdf_id': '66055a0ff430a5cd90047b58',
+  //   'pdf_name': 'Manian.pdf',
+  //   'user_email': 'user3@example.com'
+  // } 
   let metaData = {
-    'pdf_id': '660075b2267302bf2f2bb7c8',
-    'pdf_name': 'EXIPA2196C-2024.pdf',
+    'pdf_id': '6606a618b430e95dfc39ce26',
+    'pdf_name': 'saidinesh.pdf',
     'user_email': 'abishek20030324@gmail.com'
-  } 
+  }
 
   // for test purpose
   onMount(async () => {
