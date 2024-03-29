@@ -12,10 +12,11 @@
     readAsArrayBuffer,
     readAsImage,
     readAsPDF,
-    readAsDataURL
+    readAsDataURL,
   } from "./utils/asyncReader.js";
   import { ggID } from "./utils/helper.js";
   import { save } from "./utils/PDF.js";
+
   const genID = ggID();
   let pdfFile;
   let pdfName = "";
@@ -27,6 +28,17 @@
   let selectedPageIndex = -1;
   let saving = false;
   let addingDrawing = false;
+  // let metaData = {
+  //   'pdf_id': '66055a0ff430a5cd90047b58',
+  //   'pdf_name': 'Manian.pdf',
+  //   'user_email': 'user3@example.com'
+  // } 
+  let metaData = {
+    'pdf_id': '6606a618b430e95dfc39ce26',
+    'pdf_name': 'saidinesh.pdf',
+    'user_email': 'abishek20030324@gmail.com'
+  }
+
   // for test purpose
   onMount(async () => {
     try {
@@ -38,10 +50,6 @@
         fetchFont(currentFont);
         prepareAssets();
       }, 5000);
-      // const imgBlob = await (await fetch("/test.jpg")).blob();
-      // addImage(imgBlob);
-      // addTextField("測試!");
-      // addDrawing(200, 100, "M30,30 L100,50 L50,70", 0.5);
     } catch (e) {
       console.log(e);
     }
@@ -49,34 +57,25 @@
 
   async function onUploadPDF(pdfId) {
     try {
-        const response = await fetch(`http://localhost:8001/pdfs?file_id=${pdfId}`);
-        if (!response.ok) {
-            throw new Error('Failed to fetch PDF from the server');
-        }
-        
-        const pdfBlob = await response.blob();
-        const file = new File([pdfBlob], 'pdf_from_database.pdf', { type: 'application/pdf' });
+      const response = await fetch(
+        `http://localhost:8001/pdfs?file_id=${pdfId}`,
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch PDF from the server");
+      }
 
-        selectedPageIndex = -1;
-        await addPDF(file);
-        selectedPageIndex = 0;
+      const pdfBlob = await response.blob();
+      const file = new File([pdfBlob], metaData.pdf_name, {
+        type: "application/pdf",
+      });
+
+      selectedPageIndex = -1;
+      await addPDF(file);
+      selectedPageIndex = 0;
     } catch (error) {
-        console.error(error);
+      console.error(error);
     }
   }
-
-  // async function onUploadPDF(e) {
-  //   const files = e.target.files || (e.dataTransfer && e.dataTransfer.files);
-  //   const file = files[0];
-  //   if (!file || file.type !== "application/pdf") return;
-  //   selectedPageIndex = -1;
-  //   try {
-  //     await addPDF(file);
-  //     selectedPageIndex = 0;
-  //   } catch (e) {
-  //     console.log(e);
-  //   }
-  // }
 
   async function addPDF(file) {
     try {
@@ -94,6 +93,7 @@
       throw e;
     }
   }
+
   async function onUploadImage(e) {
     const file = e.target.files[0];
     if (file && selectedPageIndex >= 0) {
@@ -101,9 +101,9 @@
     }
     e.target.value = null;
   }
+
   async function addImage(file) {
     try {
-      // get dataURL to prevent canvas from tainted
       const url = await readAsDataURL(file);
       const img = await readAsImage(url);
       const id = genID();
@@ -116,20 +116,22 @@
         x: 0,
         y: 0,
         payload: img,
-        file
+        file,
       };
       allObjects = allObjects.map((objects, pIndex) =>
-        pIndex === selectedPageIndex ? [...objects, object] : objects
+        pIndex === selectedPageIndex ? [...objects, object] : objects,
       );
     } catch (e) {
       console.log(`Fail to add image.`, e);
     }
   }
+
   function onAddTextField() {
     if (selectedPageIndex >= 0) {
       addTextField();
     }
   }
+
   function addTextField(text = "New Text Field") {
     const id = genID();
     fetchFont(currentFont);
@@ -138,21 +140,23 @@
       text,
       type: "text",
       size: 16,
-      width: 0, // recalculate after editing
+      width: 0,
       lineHeight: 1.4,
       fontFamily: currentFont,
       x: 0,
-      y: 0
+      y: 0,
     };
     allObjects = allObjects.map((objects, pIndex) =>
-      pIndex === selectedPageIndex ? [...objects, object] : objects
+      pIndex === selectedPageIndex ? [...objects, object] : objects,
     );
   }
+
   function onAddDrawing() {
     if (selectedPageIndex >= 0) {
       addingDrawing = true;
     }
   }
+
   function addDrawing(originWidth, originHeight, path, scale = 1) {
     const id = genID();
     const object = {
@@ -164,47 +168,80 @@
       originWidth,
       originHeight,
       width: originWidth * scale,
-      scale
+      scale,
     };
     allObjects = allObjects.map((objects, pIndex) =>
-      pIndex === selectedPageIndex ? [...objects, object] : objects
+      pIndex === selectedPageIndex ? [...objects, object] : objects,
     );
   }
+
   function selectFontFamily(event) {
     const name = event.detail.name;
     fetchFont(name);
     currentFont = name;
   }
+
   function selectPage(index) {
     selectedPageIndex = index;
   }
+
   function updateObject(objectId, payload) {
     allObjects = allObjects.map((objects, pIndex) =>
       pIndex == selectedPageIndex
-        ? objects.map(object =>
-            object.id === objectId ? { ...object, ...payload } : object
+        ? objects.map((object) =>
+            object.id === objectId ? { ...object, ...payload } : object,
           )
-        : objects
+        : objects,
     );
   }
+
   function deleteObject(objectId) {
     allObjects = allObjects.map((objects, pIndex) =>
       pIndex == selectedPageIndex
-        ? objects.filter(object => object.id !== objectId)
-        : objects
+        ? objects.filter((object) => object.id !== objectId)
+        : objects,
     );
   }
+
   function onMeasure(scale, i) {
     pagesScale[i] = scale;
   }
-  // FIXME: Should wait all objects finish their async work
+
+  async function updatePDF(pdfId, userEmail, savedPdfData) {
+    const formData = new FormData();
+    formData.append("file_id", pdfId);
+    formData.append("user_email", userEmail);
+    formData.append("pdf", savedPdfData);
+
+    try {
+      const response = await fetch(`http://localhost:8001/pdfs/sign`, {
+        method: "POST",
+        body: formData,
+      });
+
+      return response;
+    } catch (e) {
+      throw new Error(`Error updating PDF: ${e}`);
+    }
+  }
+
   async function savePDF() {
+    const pdfId = metaData.pdf_id;
+    const userEmail = metaData.user_email;
+
     if (!pdfFile || saving || !pages.length) return;
     saving = true;
+
     try {
-      await save(pdfFile, allObjects, pdfName, pagesScale);
+      const savedPdfData = await save(pdfFile, allObjects, pdfName, pagesScale);
+      const response = await updatePDF(pdfId, userEmail, savedPdfData);
+      if (!response.ok) {
+        throw new Error(`Error updating PDF: ${await response.text()}`);
+      }
+
+      console.log("PDF saved and updated successfully!");
     } catch (e) {
-      console.log(e);
+      console.error("Error saving or updating PDF:", e);
     } finally {
       saving = false;
     }
@@ -214,56 +251,48 @@
 <svelte:window
   on:dragenter|preventDefault
   on:dragover|preventDefault
-  on:drop|preventDefault={onUploadPDF('66001bbdd4b9f6a53c558dc6')} />
+  on:drop|preventDefault={onUploadPDF(metaData.pdf_id)}
+/>
+
 <Tailwind />
+
 <main class="flex flex-col items-center py-16 bg-gray-100 min-h-screen">
   <div
-    class="fixed z-10 top-0 left-0 right-0 h-12 flex justify-center items-center
-    bg-gray-200 border-b border-gray-300">
-    <input
-      type="file"
-      name="pdf"
-      id="pdf"
-      on:change={onUploadPDF('66001bbdd4b9f6a53c558dc6')}
-      class="hidden" />
+    class="fixed z-10 top-0 left-0 right-0 h-12 flex justify-center items-center bg-gray-200 border-b border-gray-300"
+  >
     <input
       type="file"
       id="image"
       name="image"
       class="hidden"
-      on:change={onUploadImage} />
-    <label
-      class="whitespace-no-wrap bg-blue-500 hover:bg-blue-700 text-white
-      font-bold py-1 px-3 md:px-4 rounded mr-3 cursor-pointer md:mr-4"
-      for="pdf">
-      Choose PDF
-    </label>
+      on:change={onUploadImage}
+    />
     <div
-      class="relative mr-3 flex h-8 bg-gray-400 rounded-sm overflow-hidden
-      md:mr-4">
+      class="relative mr-3 flex h-8 bg-gray-400 rounded-sm overflow-hidden md:mr-4"
+    >
       <label
-        class="flex items-center justify-center h-full w-8 hover:bg-gray-500
-        cursor-pointer"
         for="image"
+        class="flex items-center justify-center h-full w-8 hover:bg-gray-500 cursor-pointer"
         class:cursor-not-allowed={selectedPageIndex < 0}
-        class:bg-gray-500={selectedPageIndex < 0}>
+        class:bg-gray-500={selectedPageIndex < 0}
+      >
         <img src="image.svg" alt="An icon for adding images" />
       </label>
       <label
-        class="flex items-center justify-center h-full w-8 hover:bg-gray-500
-        cursor-pointer"
         for="text"
+        class="flex items-center justify-center h-full w-8 hover:bg-gray-500 cursor-pointer"
         class:cursor-not-allowed={selectedPageIndex < 0}
         class:bg-gray-500={selectedPageIndex < 0}
-        on:click={onAddTextField}>
+        on:click={onAddTextField}
+      >
         <img src="notes.svg" alt="An icon for adding text" />
       </label>
       <label
-        class="flex items-center justify-center h-full w-8 hover:bg-gray-500
-        cursor-pointer"
         on:click={onAddDrawing}
+        class="flex items-center justify-center h-full w-8 hover:bg-gray-500 cursor-pointer"
         class:cursor-not-allowed={selectedPageIndex < 0}
-        class:bg-gray-500={selectedPageIndex < 0}>
+        class:bg-gray-500={selectedPageIndex < 0}
+      >
         <img src="gesture.svg" alt="An icon for adding drawing" />
       </label>
     </div>
@@ -273,30 +302,32 @@
         placeholder="Rename your PDF here"
         type="text"
         class="flex-grow bg-transparent"
-        bind:value={pdfName} />
+        bind:value={pdfName}
+      />
     </div>
     <button
       on:click={savePDF}
-      class="w-20 bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3
-      md:px-4 mr-3 md:mr-4 rounded"
+      class="w-20 bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 md:px-4 mr-3 md:mr-4 rounded"
       class:cursor-not-allowed={pages.length === 0 || saving || !pdfFile}
-      class:bg-blue-700={pages.length === 0 || saving || !pdfFile}>
-      {saving ? 'Saving' : 'Save'}
+      class:bg-blue-700={pages.length === 0 || saving || !pdfFile}
+    >
+      {saving ? "Saving" : "Save"}
     </button>
     <a href="https://github.com/ShizukuIchi/pdf-editor">
       <img
         src="/GitHub-Mark-32px.png"
-        alt="A GitHub icon leads to personal GitHub page" />
+        alt="A GitHub icon leads to personal GitHub page"
+      />
     </a>
   </div>
   {#if addingDrawing}
     <div
       transition:fly={{ y: -200, duration: 500 }}
-      class="fixed z-10 top-0 left-0 right-0 border-b border-gray-300 bg-white
-      shadow-lg"
-      style="height: 50%;">
+      class="fixed z-10 top-0 left-0 right-0 border-b border-gray-300 bg-white shadow-lg"
+      style="height: 50%;"
+    >
       <DrawingCanvas
-        on:finish={e => {
+        on:finish={(e) => {
           const { originWidth, originHeight, path } = e.detail;
           let scale = 1;
           if (originWidth > 500) {
@@ -305,7 +336,8 @@
           addDrawing(originWidth, originHeight, path, scale);
           addingDrawing = false;
         }}
-        on:cancel={() => (addingDrawing = false)} />
+        on:cancel={() => (addingDrawing = false)}
+      />
     </div>
   {/if}
   {#if pages.length}
@@ -315,27 +347,34 @@
         placeholder="Rename your PDF here"
         type="text"
         class="flex-grow bg-transparent"
-        bind:value={pdfName} />
+        bind:value={pdfName}
+      />
     </div>
     <div class="w-full">
       {#each pages as page, pIndex (page)}
         <div
           class="p-5 w-full flex flex-col items-center overflow-hidden"
           on:mousedown={() => selectPage(pIndex)}
-          on:touchstart={() => selectPage(pIndex)}>
+          on:touchstart={() => selectPage(pIndex)}
+        >
           <div
             class="relative shadow-lg"
-            class:shadow-outline={pIndex === selectedPageIndex}>
+            class:shadow-outline={pIndex === selectedPageIndex}
+          >
             <PDFPage
-              on:measure={e => onMeasure(e.detail.scale, pIndex)}
-              {page} />
+              on:measure={(e) => onMeasure(e.detail.scale, pIndex)}
+              {page}
+            />
             <div
               class="absolute top-0 left-0 transform origin-top-left"
-              style="transform: scale({pagesScale[pIndex]}); touch-action: none;">
+              style="transform: scale({pagesScale[
+                pIndex
+              ]}); touch-action: none;"
+            >
               {#each allObjects[pIndex] as object (object.id)}
-                {#if object.type === 'image'}
+                {#if object.type === "image"}
                   <Image
-                    on:update={e => updateObject(object.id, e.detail)}
+                    on:update={(e) => updateObject(object.id, e.detail)}
                     on:delete={() => deleteObject(object.id)}
                     file={object.file}
                     payload={object.payload}
@@ -343,10 +382,11 @@
                     y={object.y}
                     width={object.width}
                     height={object.height}
-                    pageScale={pagesScale[pIndex]} />
-                {:else if object.type === 'text'}
+                    pageScale={pagesScale[pIndex]}
+                  />
+                {:else if object.type === "text"}
                   <Text
-                    on:update={e => updateObject(object.id, e.detail)}
+                    on:update={(e) => updateObject(object.id, e.detail)}
                     on:delete={() => deleteObject(object.id)}
                     on:selectFont={selectFontFamily}
                     text={object.text}
@@ -355,10 +395,11 @@
                     size={object.size}
                     lineHeight={object.lineHeight}
                     fontFamily={object.fontFamily}
-                    pageScale={pagesScale[pIndex]} />
-                {:else if object.type === 'drawing'}
+                    pageScale={pagesScale[pIndex]}
+                  />
+                {:else if object.type === "drawing"}
                   <Drawing
-                    on:update={e => updateObject(object.id, e.detail)}
+                    on:update={(e) => updateObject(object.id, e.detail)}
                     on:delete={() => deleteObject(object.id)}
                     path={object.path}
                     x={object.x}
@@ -366,10 +407,10 @@
                     width={object.width}
                     originWidth={object.originWidth}
                     originHeight={object.originHeight}
-                    pageScale={pagesScale[pIndex]} />
+                    pageScale={pagesScale[pIndex]}
+                  />
                 {/if}
               {/each}
-
             </div>
           </div>
         </div>

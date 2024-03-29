@@ -2,7 +2,7 @@ import { readAsArrayBuffer } from './asyncReader.js';
 import { fetchFont, getAsset } from './prepareAssets';
 import { noop } from './helper.js';
 
-export async function save(pdfFile, objects, name) {
+export async function save(pdfFile, objects, name, userEmail, pdfId) {
   const PDFLib = await getAsset('PDFLib');
   const download = await getAsset('download');
   const makeTextPDF = await getAsset('makeTextPDF');
@@ -91,11 +91,26 @@ export async function save(pdfFile, objects, name) {
     drawProcesses.forEach((p) => p());
   });
   await Promise.all(pagesProcesses);
-  try {
-    const pdfBytes = await pdfDoc.save();
-    download(pdfBytes, name, 'application/pdf');
-  } catch (e) {
-    console.log('Failed to save PDF.');
-    throw e;
+
+  async function convertPDFDocumentToFile(pdfDoc, fileName) {
+    try {
+      const pdfBytes = await pdfDoc.save();
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      return new File([blob], fileName, { type: 'application/pdf' });
+    } catch (error) {
+      console.error('Failed to convert PDFDocument to File:', error);
+      throw error;
+    }
   }
+
+  const finalPdf = await convertPDFDocumentToFile(pdfDoc, name)
+  return finalPdf;
+
+  // try {
+  //   const pdfBytes = await pdfDoc.save();
+  //   download(pdfBytes, name, 'application/pdf');
+  // } catch (e) {
+  //   console.log('Failed to save PDF.');
+  //   throw e;
+  // }
 }
