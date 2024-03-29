@@ -28,6 +28,11 @@
   let selectedPageIndex = -1;
   let saving = false;
   let addingDrawing = false;
+  let metaData = {
+    'pdf_id': '660075b2267302bf2f2bb7c8',
+    'pdf_name': 'EXIPA2196C-2024.pdf',
+    'user_email': 'abishek20030324@gmail.com'
+  } 
 
   // for test purpose
   onMount(async () => {
@@ -55,7 +60,7 @@
       }
 
       const pdfBlob = await response.blob();
-      const file = new File([pdfBlob], "pdf_from_database.pdf", {
+      const file = new File([pdfBlob], metaData.pdf_name, {
         type: "application/pdf",
       });
 
@@ -216,8 +221,8 @@
   }
 
   async function savePDF() {
-    const pdfId = "66055a0ff430a5cd90047b58";
-    const userEmail = "user2@example.com";
+    const pdfId = metaData.pdf_id;
+    const userEmail = metaData.user_email;
 
     if (!pdfFile || saving || !pages.length) return;
     saving = true;
@@ -241,7 +246,7 @@
 <svelte:window
   on:dragenter|preventDefault
   on:dragover|preventDefault
-  on:drop|preventDefault={onUploadPDF("66055a0ff430a5cd90047b58")}
+  on:drop|preventDefault={onUploadPDF(metaData.pdf_id)}
 />
 
 <Tailwind />
