@@ -28,17 +28,14 @@
   let selectedPageIndex = -1;
   let saving = false;
   let addingDrawing = false;
-  // let metaData = {
-  //   'pdf_id': '66055a0ff430a5cd90047b58',
-  //   'pdf_name': 'Manian.pdf',
-  //   'user_email': 'user3@example.com'
-  // } 
+  const urlParams = new URLSearchParams(window.location.search);
   let metaData = {
-    'pdf_id': '6606a618b430e95dfc39ce26',
-    'pdf_name': 'saidinesh.pdf',
-    'user_email': 'abishek20030324@gmail.com'
+    'pdf_id': urlParams.get("pdf_id") || "",
+    'pdf_name': urlParams.get("pdf_name") || "",
+    'user_email': urlParams.get("user_email") || ""
   }
 
+  console.log(metaData);
   // for test purpose
   onMount(async () => {
     try {
@@ -57,9 +54,16 @@
 
   async function onUploadPDF(pdfId) {
     try {
+      const accessToken = urlParams.get("accessToken") || "";
       const response = await fetch(
         `http://localhost:8001/pdfs?file_id=${pdfId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
+        }
       );
+      
       if (!response.ok) {
         throw new Error("Failed to fetch PDF from the server");
       }
@@ -218,7 +222,7 @@
         method: "POST",
         body: formData,
       });
-
+      console.log(response);
       return response;
     } catch (e) {
       throw new Error(`Error updating PDF: ${e}`);
@@ -240,6 +244,8 @@
       }
 
       console.log("PDF saved and updated successfully!");
+
+      window.location.href = "http://localhost:3000/dashboard";
     } catch (e) {
       console.error("Error saving or updating PDF:", e);
     } finally {
