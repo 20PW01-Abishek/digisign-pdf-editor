@@ -59,7 +59,7 @@
         `http://localhost:8001/pdfs?file_id=${pdfId}`,
         {
           headers: {
-            Authorization: `Bearer ${accessToken}`
+            'Authorization': accessToken
           }
         }
       );
